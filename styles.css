@@ -1,0 +1,131 @@
+const unicorn = document.getElementById('unicorn');
+const cat = document.getElementById('cat');
+const container = document.getElementById('game-container');
+const dots = document.querySelectorAll('.dot');
+const scoreDisplay = document.getElementById('score');
+const messageDisplay = document.getElementById('message');
+const restartButton = document.getElementById('restart-button');
+
+let unicornPos = { x: 0, y: 0 };
+let catPos = { x: Math.random() * 370, y: Math.random() * 370 };
+let score = 0;
+const totalDots = dots.length;
+const step = 30;
+const catSpeed = 5; // Velocidad del gato
+let catMovement;
+
+function initGame() {
+    unicornPos = { x: 0, y: 0 };
+    catPos = { x: Math.random() * 370, y: Math.random() * 370 };
+    score = 0;
+    scoreDisplay.innerText = `Puntuación: ${score}`;
+    messageDisplay.innerText = "";
+    restartButton.style.display = "none";
+
+    dots.forEach(dot => {
+        dot.style.display = 'block'; // Mostrar todos los puntos
+    });
+
+    unicorn.style.transform = `translate(${unicornPos.x}px, ${unicornPos.y}px)`;
+    cat.style.transform = `translate(${catPos.x}px, ${catPos.y}px)`;
+
+    document.addEventListener('keydown', handleKeyDown);
+    catMovement = setInterval(moveCat, 100); // Mueve el gato cada 100ms
+}
+
+function updateScore() {
+    scoreDisplay.innerText = `Puntuación: ${score}`;
+}
+
+function moveUnicorn(dx, dy) {
+    unicornPos.x += dx;
+    unicornPos.y += dy;
+
+    // Limitar movimiento dentro del contenedor
+    unicornPos.x = Math.max(0, Math.min(container.clientWidth - 30, unicornPos.x));
+    unicornPos.y = Math.max(0, Math.min(container.clientHeight - 30, unicornPos.y));
+
+    unicorn.style.transform = `translate(${unicornPos.x}px, ${unicornPos.y}px)`;
+    checkCollision();
+}
+
+function moveCat() {
+    const dx = unicornPos.x - catPos.x;
+    const dy = unicornPos.y - catPos.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // Normalizar la dirección y mover el gato hacia el unicornio
+    if (distance > 0) {
+        catPos.x += (dx / distance) * catSpeed;
+        catPos.y += (dy / distance) * catSpeed;
+    }
+
+    cat.style.transform = `translate(${catPos.x}px, ${catPos.y}px)`;
+    checkCatCollision();
+}
+
+function checkCollision() {
+    dots.forEach(dot => {
+        const dotRect = dot.getBoundingClientRect();
+        const unicornRect = unicorn.getBoundingClientRect();
+
+        if (
+            unicornRect.x < dotRect.x + dotRect.width &&
+            unicornRect.x + unicornRect.width > dotRect.x &&
+            unicornRect.y < dotRect.y + dotRect.height &&
+            unicornRect.y + unicornRect.height > dotRect.y
+        ) {
+            dot.style.display = 'none'; // Eliminar el punto
+            score++;
+            updateScore();
+            checkWinCondition();
+        }
+    });
+}
+
+function checkCatCollision() {
+    const unicornRect = unicorn.getBoundingClientRect();
+    const catRect = cat.getBoundingClientRect();
+
+    if (
+        unicornRect.x < catRect.x + catRect.width &&
+        unicornRect.x + unicornRect.width > catRect.x &&
+        unicornRect.y < catRect.y + catRect.height &&
+        unicornRect.y + unicornRect.height > catRect.y
+    ) {
+        messageDisplay.innerText = "¡El gato te atrapó! Fin del juego.";
+        document.removeEventListener('keydown', handleKeyDown);
+        clearInterval(catMovement);
+        restartButton.style.display = "block"; // Mostrar el botón para reiniciar
+    }
+}
+
+function checkWinCondition() {
+    if (score === totalDots) {
+        messageDisplay.innerText = "¡Has ganado!";
+        document.removeEventListener('keydown', handleKeyDown);
+        clearInterval(catMovement);
+        restartButton.style.display = "block"; // Mostrar el botón para reiniciar
+    }
+}
+
+function handleKeyDown(event) {
+    switch (event.key) {
+        case 'w': // Arriba
+            moveUnicorn(0, -step);
+            break;
+        case 's': // Abajo
+            moveUnicorn(0, step);
+            break;
+        case 'a': // Izquierda
+            moveUnicorn(-step, 0);
+            break;
+        case 'd': // Derecha
+            moveUnicorn(step, 0);
+            break;
+    }
+}
+
+restartButton.addEventListener('click', initGame); // Reiniciar el juego al hacer clic
+
+initGame(); // Iniciar el juego al cargar la página
